@@ -1,0 +1,51 @@
+# Optimiser
+optimiser = Adam(model.parameters(), lr=3e-4, weight_decay=0.0001)
+
+# Loss Function
+loss_fn = CrossEntropyLoss()
+
+for epoch in range(3):
+    start = time()
+    
+    tr_acc = 0
+    test_acc = 0
+    
+    # Train
+    model.train()
+    
+    with tqdm(train_loader, unit="batch") as tepoch:
+        for xtrain, ytrain in tepoch:
+            optimiser.zero_grad()
+            
+            xtrain = xtrain.to(device)
+            train_prob = model(xtrain)
+            train_prob = train_prob.cpu()
+            
+            loss = loss_fn(train_prob, ytrain)
+            loss.backward()
+            optimiser.step()
+            
+            # training ends
+            
+            train_pred = torch.max(train_prob, 1).indices
+            tr_acc += int(torch.sum(train_pred == ytrain))
+            
+        ep_tr_acc = tr_acc / LEN_TRAIN
+    
+    # Evaluate
+    model.eval()
+    with torch.no_grad():
+        for xtest, ytest in test_loader:
+            xtest = xtest.to(device)
+            test_prob = model(xtest)
+            test_prob = test_prob.cpu()
+            
+            test_pred = torch.max(test_prob,1).indices
+            test_acc += int(torch.sum(test_pred == ytest))
+            
+        ep_test_acc = test_acc / LEN_TEST
+    
+    end = time()
+    duration = (end - start) / 60
+    
+    print(f"Epoch: {epoch}, Time: {duration}, Loss: {loss}\nTrain_acc: {ep_tr_acc}, Test_acc: {ep_test_acc}")
